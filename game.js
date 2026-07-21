@@ -1,4 +1,5 @@
 const W = 160, H = 90;
+const CX = W >> 1, CY = H >> 1;
 const cvs = document.getElementById('c');
 const ctx = cvs.getContext('2d');
 
@@ -28,7 +29,19 @@ const stars = Array.from({length: 40}, () => ({
     phase: Math.random() * 6.28
 }));
 
-let starT = 0, lastMs = 0;
+let starT = 0, pulseT = 0, lastMs = 0;
+
+function pCircle(cx, cy, r, col){
+    bx.fillStyle = col;
+    const ir = r - 1;
+    for(let dy = -r; dy <= r; dy++){
+        for(let dx = -r; dx <= r; dx++){
+            const d2 = dx*dx + dy+dy;
+            if(d2 <= r*r && d2 >= ir*ir)
+                bx.fillRect((cx+dx)|0, (cy+dy)|0, 1, 1);
+        }
+    }
+}
 
 function draw(){
     bx.fillStyle = '#0a0a0f'
@@ -41,6 +54,8 @@ function draw(){
         bx.fillStyle = '#fff';
         bx.fillRect(s.x, s.y, 1, 1);
     }
+    const cr = Math.round(5 + 0.8 * Math.sin(pulseT * 3));
+    pCircle(CX, CY, cr, '#e0e0f0');
     bx.globalAlpha = 1;
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(buf, 0, 0, cvs.width, cvs.height);
@@ -51,6 +66,7 @@ function loop(ms){
     const dt = Math.min((ms - lastMs) / 1000, 0.05);
     lastMs = ms;
     starT += dt;
+    pulseT += dt;
     draw();
     requestAnimationFrame(loop);
 }
