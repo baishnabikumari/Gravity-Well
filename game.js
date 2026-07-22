@@ -96,9 +96,9 @@ function draw() {
     }
     for(const h of holes){
         const fade = Math.min(h.age * 2, (h.life - h.age) * 2, 1);
-        bx.globalAlpha = fade;
+        bx.globalAlpha = fade * (0.7 + 0.3 * Math.abs(Math.sin(starT * 3 + h.x)));
         pCircle(h.x, h.y, h.r, '#00eebb', false);
-        pCircle(h.x, h.y, h.r - 2, '#00eebb', false);
+        if(h.r > 2) pCircle(h.x, h.y, h.r - 2, '#00eebb', false);
         bx.globalAlpha = 1;
     }
     let minD = Infinity;
@@ -127,7 +127,8 @@ function draw() {
     const sa = Math.min(0.38 + Math.max(scoreFlash, 0) * 0.55, 1);
     bx.globalAlpha = sa;
     bx.fillStyle = '#e0e0f0';
-    bx.font = '6px monospace';
+    const fs = scoreFlash > 0.5 ? '7px' : '6px';
+    bx.font = fs + ' monospace';
     bx.fillText(score | 0, 2, 8);
     if(best > 0){
         bx.globalAlpha = sa * 0.4;
