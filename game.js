@@ -34,7 +34,7 @@ const keys = {};
 let ang = -Math.PI / 2, pullPow = 0;
 let orbs = [];
 let spawnT = 0, t = 0;
-let alive = true, score = 0; scoreFlash = 0;
+let alive = true, score = 0, scoreFlash = 0;
 let holes = [], holeT = 0;
 let best = 0;
 
@@ -42,7 +42,7 @@ function mkHole(){
     const a = Math.random() * Math.PI * 2;
     const d = 16 + Math.random() * 26;
     return{
-        x: (CY + Math.cos(a) * d) | 0,
+        x: (CX + Math.cos(a) * d) | 0,
         y: (CY + Math.sin(a) * d) | 0,
         r: 4, life: 9 + Math.random() * 6, age: 0
     };
@@ -95,7 +95,7 @@ function draw() {
         bx.fillRect(s.x, s.y, 1, 1);
     }
     for(const h of holes){
-        const fade = Math.min(H.age * 2, (H.life - H.age) * 2, 1);
+        const fade = Math.min(h.age * 2, (h.life - h.age) * 2, 1);
         bx.globalAlpha = fade;
         pCircle(h.x, h.y, h.r, '#00eebb', false);
         pCircle(h.x, h.y, h.r - 2, '#00eebb', false);
@@ -190,7 +190,7 @@ function loop(ms) {
             if(hd < h.r + o.r){ o.dead = true; score += 150; scoreFlash = 1; break; }
             if(hd < 30){
                 const f = 6 / (hd + 1);
-                o.vy += hx/hd * f * dt;
+                o.vx += hx/hd * f * dt;
                 o.vy += hy/hd * f * dt;
             }
         }
@@ -212,7 +212,7 @@ function loop(ms) {
         }
     }
     for (const o of orbs){
-        if(!o.dead && Math.hypot(o.x - CY, o.y - CY) < 5 + o.r){
+        if(!o.dead && Math.hypot(o.x - CX, o.y - CY) < 5 + o.r){
             alive = false;
             if(( score | 0 ) > best) best = score | 0;
             break;
