@@ -35,6 +35,18 @@ let ang = -Math.PI / 2, pullPow = 0;
 let orbs = [];
 let spawnT = 0, t = 0;
 let alive = true, score = 0; scoreFlash = 0;
+let holes = [], holeT = 0;
+let best = 0;
+
+function mkHole(){
+    const a = Math.random() * Math.PI * 2;
+    const d = 16 + Math.random() * 26;
+    return{
+        x: (CY + Math.cos(a) * d) | 0,
+        y: (CY + Math.sin(a) * d) | 0,
+        r: 4, life: 9 + Math.random() * 6, age: 0
+    };
+}
 
 function mkOrb() {
     let x, y;
@@ -82,6 +94,13 @@ function draw() {
         bx.fillStyle = '#fff';
         bx.fillRect(s.x, s.y, 1, 1);
     }
+    for(const h of holes){
+        const fade = Math.min(H.age * 2, (H.life - H.age) * 2, 1);
+        bx.globalAlpha = fade;
+        pCircle(h.x, h.y, h.r, '#00eebb', false);
+        pCircle(h.x, h.y, h.r - 2, '#00eebb', false);
+        bx.globalAlpha = 1;
+    }
     let minD = Infinity;
     for (const o of orbs){
         const d = Math.hypot(o.x - CX, o.y - CY);
@@ -105,6 +124,16 @@ function draw() {
     if (pullPow > 0.1) { bx.fillStyle = '#9999ff'; bx.fillRect(ex, ey, 2, 2); }
     bx.globalAlpha = 1;
 
+    const sa = Math.min(0.38 + Math.max(scoreFlash, 0) * 0.55, 1);
+    bx.globalAlpha = sa;
+    bx.fillStyle = '#e0e0f0';
+    bx.font = '6px monospace';
+    bx.fillText(score | 0, 2, 8);
+    if(best > 0){
+        bx.globalAlpha = sa * 0.4;
+        bx.fillText('best ' + best, 2, 16);
+    }
+    bx.globalAlpha = 1;
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(buf, 0, 0, cvs.width, cvs.height);
 }
@@ -136,6 +165,15 @@ function loop(ms) {
 
     const tx = CX + Math.cos(ang) * 30;
     const ty = CY + Math.sin(ang) * 30;
+    
+    holeT += dt;
+    if(holes.length < 2 && holeT >= 12){
+        holeT = 0; holes.push(mkHole());
+    }
+    for(let i = holes.length - 1; i >= 0; i--){
+        holes[i].age += dt;
+        if(holes[i].age >= holes[i].life) holes.splice(i, 1);
+    }
     for (const o of orbs) {
         if (pullPow > 0.01) {
             const pdx = tx - o.x, pdy = ty - o.y;
@@ -144,6 +182,16 @@ function loop(ms) {
                 const f = pullPow * 3.5 / (pd + 2);
                 o.vx += pdx / pd * f * dt;
                 o.vy += pdy / pd * f * dt;
+            }
+        }
+        for (const h of holes){
+            const hx = h.x - o.x, hy = h.y - o.y;
+            const hd = Math.hypot(hx, hy);
+            if(hd < h.r + o.r){ o.dead = true; score += 150; scoreFlash = 1; break; }
+            if(hd < 30){
+                const f = 6 / (hd + 1);
+                o.vy += hx/hd * f * dt;
+                o.vy += hy/hd * f * dt;
             }
         }
         o.x += o.vx * dt * 60;
@@ -170,6 +218,9 @@ function loop(ms) {
             break;
         }
     }
+
+    score += dt * 3;
+    if(scoreFlash > 0) scoreFlash -= dt * 2.5;
     orbs = orbs.filter(o => !o.dead);
     if(!alive) { draw(); return; }
     draw();
