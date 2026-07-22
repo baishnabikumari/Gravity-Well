@@ -60,7 +60,7 @@ function mkOrb() {
     const spread = (Math.random() - 0.5) * 0.9;
     const ca = Math.cos(spread), sa = Math.sin(spread);
     const nx = dx / d, ny = dy / d;
-    const spd = 0.2 + Math.random() * 0.18;
+    const spd = Math.min(0.2 + Math.random() * 0.18 + t * 0.0003, 0.8);
 
     return {
         x, y,
@@ -142,8 +142,89 @@ document.addEventListener('keydown', e => {
     keys[e.key] = true;
     if ([' ', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key))
         e.preventDefault();
+    if(!alive && e.key === ' ') start();
 });
+
+cvs.addEventListener('click', () => { if (!alive) start(); });
+
+let touchX = 0;
+cvs.addEventListener('touchstart', e => {
+    touchX = e.touches[0].clientX;
+    if(!alive) start();
+    e.preventDefault();
+}, {passive: false});
+cvs.addEventListener('touchmove', e => {
+    if(!alive) return;
+    const dx = e.touches[0].clientX - touchX;
+    ang += dx * 0.015;
+    touchX = e.touches[0].clientX;
+    pullPow = Math.min(pullPow + 0.04, 1.6);
+    e.preventDefault();
+}, {passive: false});
+cvs.addEventListener('touchend', () => {
+    pullPow = Math.max(pullPow - 0.5, 0);
+}, {passive: false});
 document.addEventListener('keyup', e => { keys[e.key] = false; });
+
+function start(){
+    orbs = []; holes = [];
+    ang = -Math.PI / 2; pullPow = 0;
+    score = 0; scoreFlash = 0;
+    t = 0; spawnT = 0; holeT = 0;
+    pulseT = 0; alive = true;
+    lastMs = 0;
+    requestAnimationFrame(loop)
+}
+
+function drawGameOver(){
+    bx.fillStyle = 'rgba(10,10,15,0.82)';
+    bx.fillRect(0, 0, W, H);
+    bx.textAlign = 'center';
+    bx.fillStyle = '#e0e0f0';
+    bx.font = '8px monospace';
+    bx.fillText('GAME OVER', CX, CY - 12);
+    bx.font = '6px monospace';
+    bx.fillText(score | 0, CX, CY);
+    if((score | 0) >= best && best > 0){
+        bx.fillStyle = '#ffcc44';
+        bx.fillText('new best!', CX, CY + 10);
+    } else if(best > 0){
+        bx.fillStyle = '#555566';
+        bx.fillText('best' + best, CX, CY + 10);
+    }
+    bx.fillStyle = '#555566';
+    bx.font = '5px monospace';
+    bx.fillText('space / tap to play again', CX, CY + 20);
+    bx.textAlign = 'left';
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(buf, 0, 0, cvs.width, cvs.height);
+}
+
+function drawTitle(){
+    bx.fillStyle = '#0a0a0f';
+    bx.fillRect(0, 0, W, H);
+    for(const s of stars){
+        bx.globalAlpha = 0.5;
+        bx.fillStyle = '#fff';
+        bx.fillRect(s.x, s.y, 1, 1);
+    }
+    bx.globalAlpha = 1;
+    pCircle(CX, CY, 5, '#e0e0f0', false);
+    bx.textAlign = 'center';
+    bx.fillStyle = '#e0e0f0';
+    bx.font = '8px monospace';
+    bx.fillText('GRAVITY WELL', CX, CY - 20);
+    bx.fillStyle = '#555566';
+    bx.font = '5px monospace';
+    bx.fillText('\u2190 \u2192 to rotate pull', CX, CY + 10);
+    bx.fillText('fling orbs into each other', CX, CY + 18);
+    bx.fillText('or into cyan holes', CX, CY + 26);
+    bx.fillStyle = '#e0e0f0';
+    bx.fillText('space or tap to play', CX, CY + 38);
+    bx.textAlign = 'left';
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(buf, 0, 0, cvs.width, cvs.height);
+}
 
 function loop(ms) {
     if (!lastMs) lastMs = ms;
@@ -158,9 +239,12 @@ function loop(ms) {
     if (!left && !right) pullPow = Math.max(pullPow - dt * 4, 0);
     t += dt;
     spawnT += dt;
-    if (spawnT >= 2.0) {
+    const rate = Math.max(2.0 - t * 0.03, 0.5);
+    if (spawnT >= rate) {
         spawnT = 0;
         orbs.push(mkOrb());
+        if(t > 20 && Math.random() < 0.35) orbs.push(mkOrb());
+        if(t < 55 && Math.random() < 0.25) orbs.push(mkOrb());
     }
 
     const tx = CX + Math.cos(ang) * 30;
@@ -222,12 +306,15 @@ function loop(ms) {
     score += dt * 3;
     if(scoreFlash > 0) scoreFlash -= dt * 2.5;
     orbs = orbs.filter(o => !o.dead);
-    if(!alive) { draw(); return; }
+    if(!alive) { draw(); drawGameOver(); return; }
     draw();
     requestAnimationFrame(loop);
 }
 
-requestAnimationFrame(loop);
+//requestAnimationFrame(loop)
+drawTitle();
+document.addEventListener('keydown', e => { if (e.key === ' ') start(); }, { once: true });
+cvs.addEventListener('click', start, { once: true });
 // //test draw - fill bg + one block rect to confirm the pixelated upsale
 // bx.fillStyle = '#0a0a0f';
 // bx.fillRect(0, 0, W, H);
