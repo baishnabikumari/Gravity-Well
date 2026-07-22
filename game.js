@@ -191,7 +191,7 @@ function drawGameOver(){
         bx.fillText('new best!', CX, CY + 10);
     } else if(best > 0){
         bx.fillStyle = '#555566';
-        bx.fillText('best' + best, CX, CY + 10);
+        bx.fillText('best ' + best, CX, CY + 10);
     }
     bx.fillStyle = '#555566';
     bx.font = '5px monospace';
@@ -245,7 +245,7 @@ function loop(ms) {
         spawnT = 0;
         orbs.push(mkOrb());
         if(t > 20 && Math.random() < 0.35) orbs.push(mkOrb());
-        if(t < 55 && Math.random() < 0.25) orbs.push(mkOrb());
+        if(t > 55 && Math.random() < 0.25) orbs.push(mkOrb());
     }
 
     const tx = CX + Math.cos(ang) * 30;
