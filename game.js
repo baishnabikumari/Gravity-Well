@@ -34,6 +34,7 @@ const keys = {};
 let ang = -Math.PI / 2, pullPow = 0;
 let orbs = [];
 let spawnT = 0, t = 0;
+let alive = true, score = 0; scoreFlash = 0;
 
 function mkOrb() {
     let x, y;
@@ -81,13 +82,19 @@ function draw() {
         bx.fillStyle = '#fff';
         bx.fillRect(s.x, s.y, 1, 1);
     }
-    const cr = Math.round(5 + 0.8 * Math.sin(pulseT * 3));
-    pCircle(CX, CY, cr, '#e0e0f0', false);
-    bx.globalAlpha = 1;
-
-    for (const o of orbs) {
-        pCircle(o.x, o.y, o.r, '#c0c0cc', true);
+    let minD = Infinity;
+    for (const o of orbs){
+        const d = Math.hypot(o.x - CX, o.y - CY);
+        if(d < minD) minD = d;
+        pCircle(o.x, o.y, o.r, d < 24 ? '#ff3344' : '#c0c0cc', true);
     }
+    const cr = Math.round(5 + 0.8 * Math.sin(pulseT * 3));
+    pCircle(CX, CY, cr, minD < 22 ? '#ff3344' : '#e0e0f0', false);
+    // bx.globalAlpha = 1;
+
+    // for (const o of orbs) {
+    //     pCircle(o.x, o.y, o.r, '#c0c0cc', true);
+    // }
     const len = 8 + pullPow * 7;
     const ex = (CX + Math.cos(ang) * len) | 0;
     const ey = (CY + Math.sin(ang) * len) | 0;
@@ -145,7 +152,26 @@ function loop(ms) {
         if (spd > 1.5) { o.vx = o.vx / spd * 1.5; o.vy = o.vy / spd * 1.5; }
         if (o.x < -20 || o.x > W + 20 || o.y < -20 || o.y > H + 20) o.dead = true;
     }
+    for(let i = 0; i < orbs.length; i++){
+        if(orbs[i].dead) continue;
+        for(let j = i + 1; j < orbs.length; j++){
+            if(orbs[j].dead) continue;
+            const dd = Math.hypot(orbs[j].x - orbs[i].x, orbs[j].y - orbs[i].y);
+            if(dd <= orbs[i].r + orbs[j].r){
+                orbs[i].dead = orbs[j].dead = true;
+                score += 100; scoreFlash = 1;
+            }
+        }
+    }
+    for (const o of orbs){
+        if(!o.dead && Math.hypot(o.x - CY, o.y - CY) < 5 + o.r){
+            alive = false;
+            if(( score | 0 ) > best) best = score | 0;
+            break;
+        }
+    }
     orbs = orbs.filter(o => !o.dead);
+    if(!alive) { draw(); return; }
     draw();
     requestAnimationFrame(loop);
 }
